@@ -1,0 +1,150 @@
+# The Selene stack: USAS (ubuntu-server-auto-setup's web UI, which installs Ubuntu Server VMs on Proxmox VE and
+# applies a hardened baseline), alone on its host because its data holds the Proxmox API token, the SSH key for the
+# Proxmox nodes and the Vault; plus autoheal (behind a filtering socket proxy) to restart it if it turns unhealthy.
+# Every setting comes from .env (template: .env.example; reference: docs/interfaces.md); the one secret, autoheal's
+# optional webhook, from autoheal.env (template: autoheal.env.example). Every image is pinned as
+# name:tag@sha256:<digest>; Dependabot proposes updates. scripts/check_compose.py enforces the policy
+# (docs/security.md#policy).
+#
+# USAS keeps everything in a host directory, CONFIG_ROOT/usas/config, mounted at /data. No named Docker volumes:
+# `docker volume prune` deletes every volume no container mounts as a volume, and with it any data a path setting
+# pointed into /var/lib/docker/volumes (docs/installing.md#where-data-lives).
+name: homelab-selene
+
+# Every service starts with no Linux capabilities and can't gain privileges (setuid binaries, file capabilities);
+# a service that needs a capability adds back only that one, from Docker's default set (docs/security.md#hardening).
+x-hardened: &hardened
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+
+# Health check timing shared by every service; each service adds its own test. During start_period a failing check
+# doesn't count, and Docker checks every start_interval, so a healthy service shows up within seconds (start_interval
+# needs Docker Engine 25 and Compose 2.24).
+x-healthcheck: &healthcheck
+  interval: 1m
+  timeout: 10s
+  retries: 3
+  start_period: 2m
+  start_interval: 5s
+
+services:
+  usas:
+    <<: *hardened
+    # Updated by hand, never auto-merged: a new USAS can change how it creates VMs and what its baseline does to
+    # them. Check the release's signature before bumping it (docs/upgrading.md).
+    image: honeybeartech/ubuntu-server-auto-setup:0.6.0@sha256:4ed3ce64a1a9f1970c21a92f938d9d3000827cecbe7f344adac376a83e9517b3
+    container_name: usas
+    restart: unless-stopped
+    # It runs as uid 10001 and writes only to /data and these tmpfs, as in USAS's own compose file.
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /home/usas:uid=10001,gid=10001,mode=0700
+    labels:
+      autoheal: "true"
+    environment:
+      TZ: ${TZ:?set TZ in .env}
+      # The HTTPS address the UI is opened at, through the reverse proxy: passkeys belong to its host name, and the
+      # UI answers to that name (and to localhost, for its health check) and refuses every other one.
+      USAS_PUBLIC_URL: ${USAS_PUBLIC_URL:?set USAS_PUBLIC_URL in .env}
+      # The reverse proxy's address: only its X-Forwarded-Proto and X-Forwarded-For headers are believed.
+      USAS_TRUSTED_PROXIES: ${USAS_TRUSTED_PROXIES:?set USAS_TRUSTED_PROXIES in .env}
+      # The session cookie is always Secure: the UI is only used over HTTPS, through the proxy.
+      USAS_SECURE_COOKIES: "true"
+    ports:
+      # Only on the address the reverse proxy reaches; the host's firewall lets only the proxy in
+      # (docs/installing.md#the-firewall).
+      - "${USAS_BIND_ADDRESS:?set USAS_BIND_ADDRESS in .env}:8080:8080"
+    volumes:
+      # Its inventory, Vault and Vault password, SSH key and pinned host keys, the cluster's CA, sign-in data and run
+      # history: every secret it has. Owned by uid 10001, mode 0700 (docs/installing.md).
+      - ${CONFIG_ROOT:?set CONFIG_ROOT in .env}/usas/config:/data
+    healthcheck:
+      <<: *healthcheck
+      # The image's own check (it has no curl or wget).
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://localhost:8080/healthz', timeout=4)
+
+  # Restarts any container labelled autoheal: "true" that Docker reports unhealthy (Docker itself only restarts a
+  # container whose process exits). It reaches Docker only through socket-proxy, which lets it list, inspect,
+  # restart and stop containers and nothing else. Optional restart notices go to a webhook from autoheal.env.
+  autoheal:
+    image: willfarrell/autoheal:latest@sha256:e7f42d5365c7c4490dd0cafc2858bb9fd2d64a274448d2de2bb5c386f1af7a0f
+    <<: *hardened
+    container_name: autoheal
+    restart: unless-stopped
+    read_only: true
+    # autoheal exits if it can't reach the proxy, so it starts only once the proxy answers. (After a host reboot
+    # Docker starts both at once; autoheal then restarts until the proxy is up, a few seconds.)
+    depends_on:
+      socket-proxy:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck
+      start_period: 1m
+      test: ["CMD", "pgrep", "-f", "autoheal"]
+    labels:
+      org.honeybeartech.selene.allow.latest: >-
+        The image publishes "latest" (rebuilt regularly) and versioned tags only up to 1.2.0 from 2021, so the
+        maintained image is "latest", pinned by digest.
+    environment:
+      TZ: ${TZ:?set TZ in .env}
+      DOCKER_SOCK: tcp://socket-proxy:2375
+      AUTOHEAL_CONTAINER_LABEL: autoheal
+      AUTOHEAL_INTERVAL: 10
+      # Give a service time to shut down cleanly before it's restarted.
+      AUTOHEAL_DEFAULT_STOP_TIMEOUT: 30
+      # Discord's webhook API reads the message from "content".
+      WEBHOOK_JSON_KEY: content
+    env_file:
+      - path: autoheal.env
+        required: false
+    networks:
+      - default
+      - docker-proxy
+
+  # The socket-proxy answers on an internal network with no published port, and passes on only what autoheal needs:
+  # listing and inspecting containers, and restarting or stopping them (CONTAINERS, ALLOW_RESTARTS). Creating,
+  # starting or deleting containers, exec, images, volumes and every other POST are refused.
+  socket-proxy:
+    image: lscr.io/linuxserver/socket-proxy:3.4.7@sha256:e5d819de59b343c01b2fe7adc7fad3c7a60e5dba08e45f1ac317352bc08599b5
+    <<: *hardened
+    container_name: socket-proxy
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /run
+      - /tmp
+    healthcheck:
+      <<: *healthcheck
+      start_period: 1m
+      test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1:2375/_ping"]
+    labels:
+      autoheal: "true"
+      org.honeybeartech.selene.allow.docker-socket: >-
+        A filtering proxy so that autoheal never gets the socket itself: it allows only listing, inspecting,
+        restarting and stopping containers, on an internal network with no published port. The socket mount is
+        read-only, which protects the socket file but not the API; the proxy's filter is what limits it.
+    environment:
+      TZ: ${TZ:?set TZ in .env}
+      CONTAINERS: 1
+      ALLOW_RESTARTS: 1
+      POST: 0
+      EVENTS: 0
+      PING: 1
+      VERSION: 1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - docker-proxy
+
+networks:
+  # socket-proxy's network: internal, so nothing on it can reach the outside world and nothing outside can reach
+  # the proxy; only autoheal joins it.
+  docker-proxy:
+    internal: true
