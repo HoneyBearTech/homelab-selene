@@ -87,8 +87,9 @@ finding is triaged within 14 days:
 
 ### Current findings
 
-**Planned**: the first triage, after the first weekly image scan once the repository is on GitHub. Findings are
-left open in code scanning rather than dismissed, so they close by themselves when an update ships the fix.
+None. The first weekly image scan (2026-10-26) found no HIGH or CRITICAL finding with a fix in any of the three
+images, so there is nothing to triage. Findings are left open in code scanning rather than dismissed, so they close
+by themselves when an update ships the fix.
 
 **autoheal** (`willfarrell/autoheal`): its only maintained tag is `latest` (its versioned tags stop at 1.2.0 from
 2021), so it is pinned as `latest@sha256:…` with a policy exception; if Dependabot doesn't propose new digests for

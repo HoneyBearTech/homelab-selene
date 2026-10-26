@@ -13,17 +13,17 @@ file changes with them, in the same pull request.
 - Done: the scheduled backup's copy off the host encrypted with age (`BACKUP_AGE_RECIPIENT`), tested in the smoke
   test.
 - Done: USAS excluded from Dependabot's auto-merge; it is bumped by hand after checking its signature.
-- **Planned**: the repository on GitHub, with branch protection, Dependabot and the CI secrets.
-- **Planned**: first release (0.1.0) before Selene is first deployed, so the server starts from a signed, verified
-  version.
-- **Planned**: Selene runs the stack from a checkout of this repository, behind the reverse proxy and the firewall
-  rule, with the existing USAS data moved over ([installing.md](installing.md#moving-an-existing-usas-here)).
-- **Planned**: Selene follows `main` with a pull agent, so a merge deploys within minutes
+- Done: the repository on GitHub, with branch protection, Dependabot and the CI secrets.
+- Done: Selene runs the stack from a checkout of this repository, behind the reverse proxy and the firewall rule,
+  with the existing USAS data moved over ([installing.md](installing.md#moving-an-existing-usas-here)).
+- Done: Selene follows `main` with a pull agent, so a merge deploys within minutes
   ([upgrading.md](upgrading.md#following-main)).
+- **Planned**: the first release (0.1.0), a signed, verified snapshot of what Selene runs.
 
 ## Next: safe upgrades and rebuilds
 
-- **Planned**: scheduled backups copied off the host, encrypted, reported to a push monitor.
+- Done: nightly scheduled backups, copied off the host encrypted with age.
+- **Planned**: the scheduled backup reporting to a push monitor, so a missed night raises an alert.
 - **Planned**: the documented rebuild ([rebuilding.md](rebuilding.md)) rehearsed on a scratch machine from a real,
   encrypted backup.
 - **Planned**: the first USAS upgrade through this repository, following [upgrading.md](upgrading.md#upgrading-usas).
@@ -36,8 +36,8 @@ file changes with them, in the same pull request.
 ## Security and project health
 
 - Keep CI, CodeQL, Scorecard, dependency review and the DCO check green on every change.
-- **Planned**: branch protection on `main` with required checks; private vulnerability reporting; secret scanning
-  with push protection.
+- Done: branch protection on `main` with required checks; private vulnerability reporting; secret scanning with
+  push protection.
 - **Planned**: the OpenSSF Best Practices **Passing** and **Silver** badges and **OSPS Baseline** Levels 1 and 2
   ([project 15944](https://www.bestpractices.dev/projects/15944); the template meets them).
 - **Planned**: signed releases with checksums, SBOM and SLSA provenance, from 0.1.0 on.
