@@ -16,7 +16,11 @@
 #                       encrypted to that key (backup.tar.age, with its SHA256SUMS), and only the key's owner can read
 #                       it; empty = the backup is copied as it is
 #   BACKUP_PING_URL     an Uptime Kuma push URL, told "up" after a good run and "down" after a failed one
+#   BACKUP_BUSY_TIMEOUT how long to wait, in seconds, while the stack is busy (default: 14400); then the run fails
+#   BACKUP_BUSY_INTERVAL how often to look again, in seconds, while it is busy (default: 60)
 #
+# A stack whose services mustn't be stopped while they work defines backup_busy in scripts/backup-stack.sh: it
+# succeeds, printing why, while the stack is busy. The backup then waits, and stops nothing until it isn't.
 # Only directories named like a backup (<date>-<time>) are ever pruned, here or at BACKUP_REMOTE. A copy is complete
 # once its SHA256SUMS has arrived, which is sent last; scripts/restore.sh refuses a directory without one.
 set -euo pipefail
@@ -33,6 +37,8 @@ BACKUP_REMOTE=
 BACKUP_REMOTE_KEEP=30
 BACKUP_PING_URL=
 BACKUP_AGE_RECIPIENT=
+BACKUP_BUSY_TIMEOUT=14400
+BACKUP_BUSY_INTERVAL=60
 env_file=${BACKUP_ENV_FILE:-$root/backup.env}
 if [ -f "$env_file" ]; then
   # Read as data, never sourced: only these keys, one KEY=value per line.
@@ -43,7 +49,8 @@ if [ -f "$env_file" ]; then
     value=${value#\"}
     value=${value%\"}
     case $key in
-      BACKUP_DIR | BACKUP_KEEP | BACKUP_REMOTE | BACKUP_REMOTE_KEEP | BACKUP_PING_URL | BACKUP_AGE_RECIPIENT)
+      BACKUP_DIR | BACKUP_KEEP | BACKUP_REMOTE | BACKUP_REMOTE_KEEP | BACKUP_PING_URL | BACKUP_AGE_RECIPIENT | \
+        BACKUP_BUSY_TIMEOUT | BACKUP_BUSY_INTERVAL)
         printf -v "$key" '%s' "$value" ;;
       *)
         echo "error: unknown setting '$key' in $env_file" >&2
@@ -52,12 +59,20 @@ if [ -f "$env_file" ]; then
     esac
   done <"$env_file"
 fi
-for key in BACKUP_KEEP BACKUP_REMOTE_KEEP; do
+for key in BACKUP_KEEP BACKUP_REMOTE_KEEP BACKUP_BUSY_INTERVAL; do
   if ! [[ ${!key} =~ ^[1-9][0-9]*$ ]]; then
     echo "error: $key must be a whole number of 1 or more, not '${!key}'" >&2
     exit 1
   fi
 done
+if ! [[ $BACKUP_BUSY_TIMEOUT =~ ^(0|[1-9][0-9]*)$ ]]; then
+  echo "error: BACKUP_BUSY_TIMEOUT must be a whole number of seconds, not '$BACKUP_BUSY_TIMEOUT'" >&2
+  exit 1
+fi
+if [ -f "$root/scripts/backup-stack.sh" ]; then
+  # shellcheck source=scripts/backup-stack.sh
+  . "$root/scripts/backup-stack.sh"
+fi
 if [ -n "$BACKUP_AGE_RECIPIENT" ]; then
   if ! [[ $BACKUP_AGE_RECIPIENT =~ ^age1[02-9ac-hj-np-z]{58}$ ]]; then
     echo "error: BACKUP_AGE_RECIPIENT must be an age public key (age1 and 58 more characters)" >&2
@@ -94,6 +109,21 @@ outdated() {
   done < <(sort)
   for ((i = 0; i < ${#names[@]} - $1; i++)); do echo "${names[$i]}"; done
 }
+
+# Wait while the stack is busy (backup_busy, from scripts/backup-stack.sh): nothing is stopped until it isn't.
+if declare -F backup_busy >/dev/null; then
+  waited=0
+  while reason=$(backup_busy); do
+    if [ "$waited" -ge "$BACKUP_BUSY_TIMEOUT" ]; then
+      echo "error: still busy after $waited s ($reason); no backup taken, nothing was stopped" >&2
+      exit 1
+    fi
+    if [ "$waited" -eq 0 ]; then echo "Waiting (up to $BACKUP_BUSY_TIMEOUT s): $reason"; fi
+    sleep "$BACKUP_BUSY_INTERVAL"
+    waited=$((waited + BACKUP_BUSY_INTERVAL))
+  done
+  if [ "$waited" -gt 0 ]; then echo "No longer busy after $waited s"; fi
+fi
 
 name=$(date +%Y%m%d-%H%M%S)
 mkdir -p "$BACKUP_DIR"

@@ -165,7 +165,9 @@ password, and a later copy over them mixes two setups. Move the data before the 
 (encrypted with age, when `BACKUP_AGE_RECIPIENT` is set), keeps only the newest few in both places and reports to a
 push monitor. A systemd timer runs it nightly. Every setting is in the optional `backup.env`
 ([interfaces.md](interfaces.md#backupenv)). The backups hold every secret USAS has: the Proxmox API token, the SSH
-key the nodes trust, the Vault and its password. Copy them off the host only encrypted.
+key the nodes trust, the Vault and its password. Copy them off the host only encrypted. A backup stops USAS for a few
+seconds, which would end a playbook run, so it first waits while one is in progress (`BACKUP_BUSY_TIMEOUT`, four
+hours by default), and it signs out the web UI's sessions.
 
 1. **On the backup server**, create a folder for the backups and a user that can write only there and use rsync
    over SSH (on a Synology: a shared folder, a non-admin user with read/write on that folder only, rsync allowed
