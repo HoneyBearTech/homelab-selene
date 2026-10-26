@@ -6,6 +6,14 @@ All notable changes to homelab-selene are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- The scheduled backup waits while USAS runs a playbook instead of stopping it mid-run: `scripts/backup-stack.sh`
+  counts a web UI run whose record says `running` and an `ansible-playbook` process in the container. It looks
+  again every `BACKUP_BUSY_INTERVAL` seconds (60) and, after `BACKUP_BUSY_TIMEOUT` (14400), fails without stopping
+  anything. The smoke test checks both kinds of run against the real image. `scripts/scheduled-backup.sh` runs any
+  stack's `backup_busy` from `scripts/backup-stack.sh` this way.
+
 ## [0.1.0] - 2026-10-26
 
 ### Added
@@ -24,6 +32,7 @@ All notable changes to homelab-selene are documented here. The format follows
   `backup.env`, only `backup.tar.age` and its `SHA256SUMS` leave the host, and only the private key's holder can
   read them (`age -d -i <key> backup.tar.age | tar -x`). Needs `age` on the host. The smoke test checks that only the
   archive leaves, that the key opens it into the backup `scripts/restore.sh` reads, and that another key doesn't.
+
 - Documentation for the host: the `DOCKER-USER` firewall rule that lets only the reverse proxy reach USAS (Docker's
   published ports bypass UFW), passkeys and **Require a passkey** behind the proxy, and moving an existing USAS's
   data here ([installing.md](docs/installing.md)).
