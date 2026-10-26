@@ -116,9 +116,10 @@ jobs:
           if [ ! -f compose.yaml ]; then
             exit 0
           fi
+          # Logged out at the end either way: the x64 runner image comes with a Docker Hub entry of its own.
+          trap 'docker logout' EXIT
           if [ -n "$DOCKERHUB_TOKEN" ]; then
             printf '%s' "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
-            trap 'docker logout' EXIT
           else
             echo "::notice::No Docker Hub token; pulling anonymously"
           fi

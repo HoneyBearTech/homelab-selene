@@ -3,10 +3,8 @@
 [![CI](https://github.com/HoneyBearTech/homelab-selene/actions/workflows/ci.yml/badge.svg)](https://github.com/HoneyBearTech/homelab-selene/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/HoneyBearTech/homelab-selene/actions/workflows/codeql.yml/badge.svg)](https://github.com/HoneyBearTech/homelab-selene/actions/workflows/codeql.yml)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/HoneyBearTech/homelab-selene/badge)](https://scorecard.dev/viewer/?uri=github.com/HoneyBearTech/homelab-selene)
-<!-- TODO: BP_ID (register at bestpractices.dev once the repository is public)
-[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/<BP_ID>/badge)](https://www.bestpractices.dev/projects/<BP_ID>)
-[![OpenSSF Baseline](https://www.bestpractices.dev/projects/<BP_ID>/baseline)](https://www.bestpractices.dev/projects/<BP_ID>)
--->
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/15944/badge)](https://www.bestpractices.dev/projects/15944)
+[![OpenSSF Baseline](https://www.bestpractices.dev/projects/15944/baseline)](https://www.bestpractices.dev/projects/15944)
 
 Docker Compose stack for Selene, a homelab Ubuntu Server 26.04 (amd64) VM that runs USAS, the web UI of
 [ubuntu-server-auto-setup](https://github.com/HoneyBearTech/ubuntu-server-auto-setup), and nothing else.

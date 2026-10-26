@@ -38,8 +38,8 @@ file changes with them, in the same pull request.
 - Keep CI, CodeQL, Scorecard, dependency review and the DCO check green on every change.
 - **Planned**: branch protection on `main` with required checks; private vulnerability reporting; secret scanning
   with push protection.
-- **Planned**: the OpenSSF Best Practices **Passing** and **Silver** badges and **OSPS Baseline** Levels 1 and 2,
-  once the repository is public (the template meets them).
+- **Planned**: the OpenSSF Best Practices **Passing** and **Silver** badges and **OSPS Baseline** Levels 1 and 2
+  ([project 15944](https://www.bestpractices.dev/projects/15944); the template meets them).
 - **Planned**: signed releases with checksums, SBOM and SLSA provenance, from 0.1.0 on.
 
 ## What homelab-selene will not do
