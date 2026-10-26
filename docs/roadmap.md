@@ -18,7 +18,7 @@ file changes with them, in the same pull request.
   with the existing USAS data moved over ([installing.md](installing.md#moving-an-existing-usas-here)).
 - Done: Selene follows `main` with a pull agent, so a merge deploys within minutes
   ([upgrading.md](upgrading.md#following-main)).
-- **Planned**: the first release (0.1.0), a signed, verified snapshot of what Selene runs.
+- Done: the first release (0.1.0), a signed, verified snapshot of what Selene runs.
 
 ## Next: safe upgrades and rebuilds
 
@@ -40,7 +40,7 @@ file changes with them, in the same pull request.
   push protection.
 - **Planned**: the OpenSSF Best Practices **Passing** and **Silver** badges and **OSPS Baseline** Levels 1 and 2
   ([project 15944](https://www.bestpractices.dev/projects/15944); the template meets them).
-- **Planned**: signed releases with checksums, SBOM and SLSA provenance, from 0.1.0 on.
+- Done: signed releases with checksums, SBOM and SLSA provenance, from 0.1.0 on.
 
 ## What homelab-selene will not do
 

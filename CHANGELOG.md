@@ -6,6 +6,8 @@ All notable changes to homelab-selene are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-26
+
 ### Added
 
 - The stack for Selene, a dedicated Ubuntu Server 26.04 (amd64) host: USAS 0.6.0, the web UI of
@@ -32,3 +34,6 @@ All notable changes to homelab-selene are documented here. The format follows
   what its baseline does to them, so it is bumped by hand after checking its cosign signature by digest
   ([upgrading.md](docs/upgrading.md#upgrading-usas)). autoheal's and the socket proxy's updates still merge
   automatically once every required check passes.
+
+[Unreleased]: https://github.com/HoneyBearTech/homelab-selene/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/HoneyBearTech/homelab-selene/releases/tag/v0.1.0
