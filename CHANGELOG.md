@@ -14,6 +14,13 @@ All notable changes to homelab-selene are documented here. The format follows
   anything. The smoke test checks both kinds of run against the real image. `scripts/scheduled-backup.sh` runs any
   stack's `backup_busy` from `scripts/backup-stack.sh` this way.
 
+### Changed
+
+- USAS 0.7.0 (from 0.6.0): installs from the vendors' cloud images (Ubuntu, Debian and the RHEL family), an
+  updates playbook with its own page and schedules, and new variable names (`servers`, `firewall_*`), with the old
+  ones still read until 1.0. Its scheduled update runs keep a run record and an `ansible-playbook` process, as the
+  web UI's runs do, so the scheduled backup waits for them too.
+
 ## [0.1.0] - 2026-10-26
 
 ### Added

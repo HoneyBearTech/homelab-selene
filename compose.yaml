@@ -34,7 +34,7 @@ services:
     <<: *hardened
     # Updated by hand, never auto-merged: a new USAS can change how it creates VMs and what its baseline does to
     # them. Check the release's signature before bumping it (docs/upgrading.md).
-    image: honeybeartech/ubuntu-server-auto-setup:0.6.0@sha256:4ed3ce64a1a9f1970c21a92f938d9d3000827cecbe7f344adac376a83e9517b3
+    image: honeybeartech/ubuntu-server-auto-setup:0.7.0@sha256:71691edf302b5689abf7dd4428d136ec0d030e331af96f1a63ab3df31604e5fc
     container_name: usas
     restart: unless-stopped
     # It runs as uid 10001 and writes only to /data and these tmpfs, as in USAS's own compose file.
