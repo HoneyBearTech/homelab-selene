@@ -16,6 +16,9 @@ All notable changes to homelab-selene are documented here. The format follows
 
 ### Changed
 
+- USAS 0.8.1 (from 0.8.0): a Kubernetes cluster's servers may mix OS families (kube-vip runs per server), the
+  Servers page has Extra disks and Spread group fields, new VMs are tagged with their Proxmox node, and VMs are
+  created one at a time. The container's user, port, `/data` layout and health check are the same.
 - USAS 0.8.0 (from 0.7.0): builds k3s clusters from inventory groups, upgrades them one node at a time,
   drains Kubernetes members during fleet updates, and edits clusters in the web UI. Nothing changes for servers
   outside a `k8s_*` group, and the container's user, port, `/data` layout and health check are the same.
