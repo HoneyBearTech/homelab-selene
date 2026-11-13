@@ -43,9 +43,9 @@ Version-pinned and kept as code for easy upgrades and rebuilds.
   inspect, restart and stop containers
 
 Every service has a health check, and every image is pinned by tag **and** digest, for `linux/amd64`. New
-versions arrive as Dependabot pull requests that CI checks before they're merged. A new USAS is never merged
-automatically: it changes how VMs are created, so it is bumped by hand after checking its signature
-([upgrading](docs/upgrading.md#upgrading-usas)). The maintainer's server follows `main`: a pull agent there
+versions arrive as Renovate pull requests that CI checks before the maintainer reviews and merges them. Every
+update requires manual review and merge. USAS changes how VMs are created, so its updates also require
+checking its signature ([upgrading](docs/upgrading.md#upgrading-usas)). The maintainer's server follows `main`: a pull agent there
 applies each merge within a couple of minutes ([upgrading](docs/upgrading.md#following-main)). Nothing updates
 from a registry tag by itself: what runs is always a commit in `main`.
 

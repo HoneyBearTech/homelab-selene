@@ -1,0 +1,69 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard"
+  ],
+  "schedule": [
+    "before 6am on monday"
+  ],
+  "timezone": "America/Chicago",
+  "labels": [
+    "dependencies"
+  ],
+  "osvVulnerabilityAlerts": true,
+  "vulnerabilityAlerts": {
+    "labels": [
+      "security"
+    ]
+  },
+  "automerge": false,
+  "enabledManagers": [
+    "docker-compose",
+    "pip_requirements",
+    "github-actions",
+    "gitlabci",
+    "custom.regex"
+  ],
+  "pip_requirements": {
+    "managerFilePatterns": [
+      "/^requirements-dev\\.(in|txt)$/"
+    ]
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^scripts/lib\\.sh$/"
+      ],
+      "matchStrings": [
+        "busybox=busybox:(?<currentValue>[^@\\s]+)@(?<currentDigest>sha256:[a-f0-9]{64})"
+      ],
+      "datasourceTemplate": "docker",
+      "depNameTemplate": "busybox"
+    }
+  ],
+  "packageRules": [
+    {
+      "matchDatasources": [
+        "docker"
+      ],
+      "pinDigests": true
+    },
+    {
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "groupName": "minor and patch dependencies"
+    },
+    {
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "addLabels": [
+        "major"
+      ]
+    }
+  ]
+}
