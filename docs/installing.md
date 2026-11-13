@@ -52,7 +52,8 @@ USAS stores its container paths (`/data/...`), not the host's, so `CONFIG_ROOT` 
 3. Create USAS's folder: `. ./.env && sudo install -d -o 10001 -g 10001 -m 0700 "$CONFIG_ROOT/usas/config"`. A
    folder you didn't create is created by Docker, owned by root, and USAS can't write to it. To move an existing
    USAS here, fill the folder now ([Moving an existing USAS here](#moving-an-existing-usas-here)).
-4. Add the firewall rule ([The firewall](#the-firewall)), then `docker compose up -d --wait`.
+4. Add the firewall rule ([The firewall](#the-firewall)), validate with `docker compose config --quiet`,
+   then start with `docker compose up -d --wait`.
 5. Point the reverse proxy at USAS ([Behind the reverse proxy](#behind-the-reverse-proxy)), open
    `USAS_PUBLIC_URL` and sign in with the setup code from `docker compose logs usas`.
 
@@ -163,11 +164,14 @@ password, and a later copy over them mixes two setups. Move the data before the 
 
 `scripts/scheduled-backup.sh` takes a backup (`scripts/backup.sh`), copies it to another machine with rsync
 (encrypted with age, when `BACKUP_AGE_RECIPIENT` is set), keeps only the newest few in both places and reports to a
-push monitor. A systemd timer runs it nightly. Every setting is in the optional `backup.env`
+push monitor when configured. A systemd timer runs it nightly. Its file settings are in the optional `backup.env`
 ([interfaces.md](interfaces.md#backupenv)). The backups hold every secret USAS has: the Proxmox API token, the SSH
 key the nodes trust, the Vault and its password. Copy them off the host only encrypted. A backup stops USAS for a few
-seconds, which would end a playbook run, so it first waits while one is in progress (`BACKUP_BUSY_TIMEOUT`, four
-hours by default), and it signs out the web UI's sessions.
+seconds, which would end a playbook run. Only the scheduled script first waits while one is in progress
+(`BACKUP_BUSY_TIMEOUT`, four hours by default); manual `scripts/backup.sh` and `scripts/restore.sh` do not.
+Check USAS's **History** page before manual backup or restore. Stopping USAS signs out the web UI's sessions.
+Set the process variable `BACKUP_ENV_FILE` to select another settings file; it is not a key accepted inside
+`backup.env` ([environment reference](interfaces.md#environment)).
 
 1. **On the backup server**, create a folder for the backups and a user that can write only there and use rsync
    over SSH (on a Synology: a shared folder, a non-admin user with read/write on that folder only, rsync allowed
@@ -202,12 +206,14 @@ hours by default), and it signs out the web UI's sessions.
    password manager, and never copy it to this host: without it no backup off the host can be read, and with it
    any of them can.
 4. **Settings**: `cp backup.env.example backup.env && chmod 600 backup.env`, then set
-   `BACKUP_REMOTE=backup-host:/volume1/<folder>`, `BACKUP_AGE_RECIPIENT=age1...` and, optionally, the retention and
-   `BACKUP_PING_URL`. For the ping, add a monitor of type **Push** in Uptime Kuma (or a monitor like it) with a
-   heartbeat interval of 25 hours, and copy its URL.
+   `BACKUP_REMOTE` and `BACKUP_AGE_RECIPIENT` using the [template](../backup.env.example) and
+   [settings reference](interfaces.md#backupenv); encryption of the remote copy requires the recipient setting.
+   Optionally set the retention and `BACKUP_PING_URL`. For the ping, add a monitor of type **Push** in Uptime Kuma
+   (or a monitor like it) with a heartbeat interval of 25 hours, and copy its URL.
 5. **Try it**: `scripts/scheduled-backup.sh`. USAS stops only while its data is archived, for seconds. The copy
-   off the host is then one folder per backup holding only `backup.tar.age` and its `SHA256SUMS`; the backup
-   itself stays readable here, in `BACKUP_DIR`. On a host that follows `main` with the pull agent
+   off the host, with `BACKUP_AGE_RECIPIENT` configured, is then one folder per backup holding only
+   `backup.tar.age` and its `SHA256SUMS`; the backup itself stays readable here, in `BACKUP_DIR`. On a host that
+   follows `main` with the pull agent
    ([upgrading.md](upgrading.md#following-main)), the backup first waits for a deploy in progress to finish and
    then holds the agent's lock, so no deploy starts while USAS is stopped ([Deploy lock](#deploy-lock)).
 6. **Schedule it**, with the systemd user units in [`deploy/systemd/`](../deploy/systemd/) (they expect the

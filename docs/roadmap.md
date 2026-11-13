@@ -26,7 +26,9 @@ file changes with them, in the same pull request.
 - **Planned**: the scheduled backup reporting to a push monitor, so a missed night raises an alert.
 - **Planned**: the documented rebuild ([rebuilding.md](rebuilding.md)) rehearsed on a scratch machine from a real,
   encrypted backup.
-- **Planned**: the first USAS upgrade through this repository, following [upgrading.md](upgrading.md#upgrading-usas).
+- Recorded in code: USAS upgrades to 0.7.0, 0.8.0 and 0.8.1 in the [changelog](../CHANGELOG.md), adding
+  cloud-image provisioning, fleet updates and k3s capabilities. This records repository changes, not verification
+  that each upgrade was deployed in production; follow [upgrading.md](upgrading.md#upgrading-usas).
 
 ## Later
 

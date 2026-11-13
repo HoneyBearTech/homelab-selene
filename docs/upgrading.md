@@ -6,6 +6,10 @@ so **every upgrade starts with a backup**. The same steps apply to updating a ch
 maintainer's server follows `main` automatically instead, where the merge is the upgrade
 ([Following `main`](#following-main)).
 
+A release is a snapshot: the latest release can differ from current `main`. Check the
+[local changelog](../CHANGELOG.md), including **Unreleased**, and the
+[release verification guide](verifying-releases.md) for the version you choose.
+
 ## Before you upgrade
 
 1. Read the release notes (the `CHANGELOG.md` section) for every release between yours and the new one, and
@@ -21,7 +25,14 @@ The state worth keeping is USAS's data: the folder it mounts from `CONFIG_ROOT` 
 password, SSH key and pinned host keys, the cluster's CA, sign-in data and run history). `scripts/backup.sh` stops
 USAS, copies its folder while it is stopped so nothing changes under the copy, and starts it again if it was
 running before compressing the copy; autoheal and socket-proxy have nothing to archive and keep running. It also
-copies `.env` and any `<service>.env` (such as `autoheal.env`):
+copies `.env` and all matching `*.env` files (including `autoheal.env` and `backup.env`). With nonempty
+`COMPOSE_ENV_FILES`, it copies only the comma-separated files named there
+([environment reference](interfaces.md#environment)).
+
+Manual backup does not wait for a playbook: check USAS's **History** page before running it, since stopping
+USAS interrupts the run. Only [scheduled backups](installing.md#scheduled-backups) perform the busy-run wait.
+
+Run a manual backup only when USAS is idle:
 
 ```sh
 scripts/backup.sh                       # into backups/<date>-<time>/ in the checkout (gitignored)
@@ -41,7 +52,8 @@ Everything in it is readable only by the user who ran the backup. **Copy it off 
 contains the Proxmox API token, the SSH key the nodes and servers trust, and the Vault with its password. Every
 service needs a container for the backup to read from, so run it on an installed stack. The Docker socket and
 anonymous volumes are never archived. [Scheduled backups](installing.md#scheduled-backups) do this nightly and copy
-each backup off the host, encrypted with age.
+each backup off the host, encrypted with age when `BACKUP_AGE_RECIPIENT` is configured. Local backups remain
+plaintext.
 
 ## Upgrading
 
@@ -130,7 +142,7 @@ restored inventory.
 keeping the files' owners and modes. Without service names it restores every service in the backup. It stops
 those services while it works and starts again the ones that were running; `--yes` skips the question.
 
-A backup copied off the host is encrypted to the age key in `BACKUP_AGE_RECIPIENT`: restoring from it needs **the
+A scheduled remote copy encrypted with `BACKUP_AGE_RECIPIENT` needs **the
 age private key**, which is kept off this host. Decrypt it first
 ([rebuilding.md](rebuilding.md#3-the-backup)); the backups in `BACKUP_DIR` on the host aren't encrypted.
 

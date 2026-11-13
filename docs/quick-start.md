@@ -23,11 +23,12 @@ empty data folder.
    ```
 
    Set `TZ`; `USAS_BIND_ADDRESS` to this host's address that the proxy reaches; `USAS_PUBLIC_URL` to the HTTPS
-   address you will open (`https://usas.example.com`); and `USAS_TRUSTED_PROXIES` to the proxy's address. Change
-   `CONFIG_ROOT` if you keep the data elsewhere (never inside `/var/lib/docker/volumes`:
-   [installing.md](installing.md#where-data-lives)). Every setting is described in
-   [interfaces.md](interfaces.md#settings). For restart notices from autoheal, also create `autoheal.env` from
-   `autoheal.env.example` (mode `600`) with a webhook URL.
+   address you will open; and `USAS_TRUSTED_PROXIES` to the proxy's address. Set
+   `CONFIG_ROOT` to the data directory (never inside `/var/lib/docker/volumes`:
+   [installing.md](installing.md#where-data-lives)). Use the [`.env.example`](../.env.example) template; every
+   setting is described in [interfaces.md](interfaces.md#settings). For restart notices from autoheal, also create `autoheal.env` from
+   [`autoheal.env.example`](../autoheal.env.example) (mode `600`) with `WEBHOOK_URL`. Optional scheduled backups
+   use [`backup.env.example`](../backup.env.example); follow [Installing](installing.md#scheduled-backups).
 
 3. **Create USAS's data folder**, owned by the user USAS runs as (uid and gid 10001), readable by nobody else:
 
