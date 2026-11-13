@@ -68,8 +68,8 @@ The workflow and secret scanners run in containers; the exact commands are in
 
 ## Coding standards
 
-- **Compose** (`compose.yaml`): every image pinned as `name:tag@sha256:<digest>` (Dependabot updates both);
-  settings from `.env` through `${VAR}`; no `privileged`, added capabilities, host network or PID namespace,
+- **Compose** (`compose.yaml`): every image pinned as `name:tag@sha256:<digest>` (Renovate proposes updates to both;
+  all require manual review and merge); settings from `.env` through `${VAR}`; no `privileged`, added capabilities, host network or PID namespace,
   or Docker socket mount unless the service has an `org.honeybeartech.selene.allow.<rule>` label giving the
   reason; every service has a health check. `scripts/check_compose.py` enforces this.
 - **Python** (`scripts/`, `tests/`): [PEP 8](https://peps.python.org/pep-0008/) and

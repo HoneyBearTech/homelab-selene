@@ -3,7 +3,7 @@
 # Proxmox nodes and the Vault; plus autoheal (behind a filtering socket proxy) to restart it if it turns unhealthy.
 # Every setting comes from .env (template: .env.example; reference: docs/interfaces.md); the one secret, autoheal's
 # optional webhook, from autoheal.env (template: autoheal.env.example). Every image is pinned as
-# name:tag@sha256:<digest>; Dependabot proposes updates. scripts/check_compose.py enforces the policy
+# name:tag@sha256:<digest>; Renovate proposes updates. scripts/check_compose.py enforces the policy
 # (docs/security.md#policy).
 #
 # USAS keeps everything in a host directory, CONFIG_ROOT/usas/config, mounted at /data. No named Docker volumes:
