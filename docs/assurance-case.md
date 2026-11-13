@@ -14,7 +14,7 @@ the secure design principles it follows, and how common weaknesses are countered
 | The API token, SSH key, Vault and its password | Committed to the public repository | Kept in USAS's data, never in the repo; `.gitignore`; gitleaks over the history in CI; GitHub push protection |
 | The API token, SSH key, Vault and its password | Leaked through a backup | `scripts/backup.sh` writes backups readable only by the user who ran it; the copy off the host is encrypted with age to a key that isn't on the host |
 | USAS's data | An upgrade that rewrites and breaks it | `scripts/backup.sh` nightly, and before every USAS update; rollback = a revert (or the old tag) + `scripts/restore.sh`, both exercised by the CI smoke test |
-| The host | A bad change merged to `main` deploying by itself | The required checks (policy check, smoke test on amd64) pass before any merge; USAS updates and updates Dependabot can't classify are merged by hand; the pull agent only fast-forwards and backs out a change that doesn't resolve or pull; rollback is a revert pull request |
+| The host | A bad change merged to `main` deploying by itself | The required checks (policy check, smoke test on amd64) pass before any merge; all dependency updates are reviewed and merged by hand; the pull agent only fast-forwards and backs out a change that doesn't resolve or pull; rollback is a revert pull request |
 | The host | A container breaking out through the Docker socket | The `docker-socket` rule; only socket-proxy mounts it, read-only, as a labelled exception; autoheal reaches Docker only through socket-proxy, which allows listing, inspecting, restarting and stopping containers, on an internal network |
 | Availability | USAS hangs without exiting | A health check on every service; autoheal restarts an unhealthy one (and can notify a webhook); a long start period keeps it from interrupting a start-up |
 | USAS's data | A crafted backup writing outside the services' data | `restore.sh` verifies `SHA256SUMS` (which covers the `MANIFEST`), accepts only plain archive names and absolute container paths without `..`, refuses the Docker socket, and writes only a mount the service has read-write |
@@ -70,7 +70,7 @@ access to `.env` or USAS's data, and an attacker who controls the reverse proxy.
 | CWE-1393 (default passwords) | USAS's first start | USAS has no default password: its first sign-in needs a one-time setup code from its log ([quick-start.md](quick-start.md)) |
 | CWE-284 (improper access control) | Docker-published ports bypassing UFW | A `DOCKER-USER` rule for port 8080, documented with a test from an allowed and a refused machine ([installing.md](installing.md#the-firewall)) |
 | CWE-22 (path traversal) | Restoring a backup | `restore.sh` validates archive names and mount paths from the checksummed `MANIFEST` |
-| CWE-1104 (unmaintained third-party components) | Images, tools, Actions | Dependabot weekly; image scan; triage SLAs ([dependencies.md](dependencies.md)) |
+| CWE-1104 (unmaintained third-party components) | Images, tools, Actions | Renovate weekly; Dependabot alerts; image scan; triage SLAs ([dependencies.md](dependencies.md)) |
 | CWE-77/78 (injection) | Workflows, scripts | Untrusted values only via `env:`; actionlint and shellcheck; CodeQL for Actions; `backup.env` read as data, never sourced |
 | CWE-20 (improper input validation) | The checker's input | It reads JSON only with the standard library, never evaluates it, and exits 2 on anything that isn't a JSON object |
 

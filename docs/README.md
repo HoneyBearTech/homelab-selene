@@ -8,7 +8,7 @@ Start with the [README](../README.md) for the USAS provisioning, fleet-update an
 | [Installing](installing.md) | Host preparation, directory layout, the firewall, moving an existing USAS, running it securely, uninstalling |
 | [Upgrading](upgrading.md) | Moving to a new release or a new USAS, manual backups, restore and rollback |
 | [Rebuilding](rebuilding.md) | Bringing the stack back on a new or wiped host from a backup |
-| [Architecture](architecture.md) | The services, who talks to whom, and how reviewed updates reach an external pull agent |
+| [Architecture](architecture.md) | The services, who talks to whom, and how reviewed Renovate updates reach an external pull agent |
 | [Interfaces](interfaces.md) | Every setting, port, volume, label and command |
 | [Verifying releases](verifying-releases.md) | Checking that release files came from this repository, unchanged |
 | [Security requirements](security.md) | What the stack protects, what it doesn't, and where secrets live |
