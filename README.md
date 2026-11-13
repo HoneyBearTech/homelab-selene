@@ -7,7 +7,8 @@
 [![OpenSSF Baseline](https://www.bestpractices.dev/projects/15944/baseline)](https://www.bestpractices.dev/projects/15944)
 
 Docker Compose stack for Selene, a homelab Ubuntu Server 26.04 (amd64) VM that runs USAS, the web UI of
-[ubuntu-server-auto-setup](https://github.com/HoneyBearTech/ubuntu-server-auto-setup), and nothing else.
+[ubuntu-server-auto-setup](https://github.com/HoneyBearTech/ubuntu-server-auto-setup), with autoheal and a
+filtering Docker socket proxy.
 Version-pinned and kept as code for easy upgrades and rebuilds.
 
 > [!WARNING]
@@ -37,10 +38,12 @@ Version-pinned and kept as code for easy upgrades and rebuilds.
 
 ([architecture](docs/architecture.md), ports in [interfaces](docs/interfaces.md#services-and-ports)):
 
-- **USAS** (Unattended Server Auto-Setup): a web UI and Ansible playbooks that install Ubuntu Server on fresh
-  Proxmox VE VMs with nobody at the keyboard, load the admin's GitHub SSH keys and apply a hardened baseline
-- **autoheal**: restarts USAS if its health check fails, through a socket proxy that only lets it list,
-  inspect, restart and stop containers
+- **USAS** (Unattended Server Auto-Setup): a web UI and Ansible playbooks for cloud-image provisioning of Ubuntu,
+  Debian and RHEL-family VMs on Proxmox VE, a hardened baseline, fleet updates and k3s clusters
+  ([upstream documentation](https://github.com/HoneyBearTech/ubuntu-server-auto-setup))
+- **autoheal**: restarts labelled unhealthy services (`usas` and `socket-proxy`) through the socket proxy
+- **socket-proxy**: exposes a filtered Docker API to autoheal on an internal network, with no host port;
+  permits only listing, inspecting, restarting and stopping containers
 
 Every service has a health check, and every image is pinned by tag **and** digest, for `linux/amd64`. New
 versions arrive as Renovate pull requests that CI checks before the maintainer reviews and merges them. Every
@@ -49,17 +52,39 @@ checking its signature ([upgrading](docs/upgrading.md#upgrading-usas)). The main
 applies each merge within a couple of minutes ([upgrading](docs/upgrading.md#following-main)). Nothing updates
 from a registry tag by itself: what runs is always a commit in `main`.
 
+## Repository layout
+
+- [compose.yaml](compose.yaml): services, image pins, networks and mounts
+- [.env.example](.env.example), [autoheal.env.example](autoheal.env.example) and
+  [backup.env.example](backup.env.example): required settings and optional notification/backup templates
+- [scripts/](scripts/): policy checks, backup, restore and smoke tests;
+  [deploy/systemd/](deploy/systemd/): scheduled-backup service and timer
+- [tests/](tests/): policy and operational tests; [docs/](docs/README.md): setup and operations
+- [Makefile](Makefile), [requirements-dev.in](requirements-dev.in),
+  [requirements-dev.txt](requirements-dev.txt) and [pyproject.toml](pyproject.toml): development commands and tools
+
 ## Getting started
+
+You need Linux on amd64, Docker Engine 25 or later, Compose v2 2.24 or later, a user in the `docker` group,
+and a reverse proxy on another host serving HTTPS. If moving an existing USAS, follow the
+[migration procedure](docs/installing.md#moving-an-existing-usas-here) before the first startup.
+
+Clone and configure the stack using the required settings below:
 
 ```sh
 git clone https://github.com/HoneyBearTech/homelab-selene.git && cd homelab-selene
-cp .env.example .env && chmod 600 .env    # then set TZ and the three USAS_ settings
+cp .env.example .env && chmod 600 .env    # then set every required setting
 . ./.env && sudo install -d -o 10001 -g 10001 -m 0700 "$CONFIG_ROOT/usas/config"
+```
+
+[Restrict port 8080 to the reverse proxy](docs/installing.md#the-firewall) before starting:
+
+```sh
+docker compose config --quiet
 docker compose up -d --wait
 docker compose logs usas                  # the setup code for the first sign-in
 ```
 
-Before anyone signs in, limit port 8080 to the reverse proxy ([the firewall](docs/installing.md#the-firewall)).
 The full steps are in the [quick start](docs/quick-start.md).
 
 ## Usage
@@ -71,27 +96,32 @@ make check                        # policy check: every image pinned, nothing pr
 scripts/backup.sh                 # back up USAS's data (stops it briefly)
 ```
 
+Manual backup can interrupt a playbook: check USAS's **History** page first. See
+[scheduled backups](docs/installing.md#scheduled-backups) for the busy-run wait, and
+[restore and rollback](docs/upgrading.md#rolling-back) for recovery.
+
 Upgrading to a new release, or following `main` the way the maintainer's server does:
 [docs/upgrading.md](docs/upgrading.md).
 
 ## Configuration
 
-Settings come from `.env` (template [`.env.example`](.env.example)), which holds no secrets.
+The following settings are required in `.env` (template [`.env.example`](.env.example)), which holds no secrets.
 
-| Setting | Default in `.env.example` | Meaning |
-| --- | --- | --- |
-| `TZ` | `Etc/UTC` | Time zone |
-| `CONFIG_ROOT` | `/srv/config` | USAS's data, in `CONFIG_ROOT/usas/config` (uid and gid 10001, mode `0700`) |
-| `USAS_BIND_ADDRESS` | `192.0.2.20` | The host address port 8080 is published on: the one the reverse proxy reaches |
-| `USAS_PUBLIC_URL` | `https://usas.example.com` | The HTTPS address USAS is opened at, through the proxy; passkeys belong to its host name |
-| `USAS_TRUSTED_PROXIES` | `192.0.2.10` | The reverse proxy's address, whose forwarded headers USAS believes |
+| Setting | Meaning |
+| --- | --- |
+| `TZ` | Time zone |
+| `CONFIG_ROOT` | USAS's data, in `CONFIG_ROOT/usas/config` (uid and gid 10001, mode `0700`) |
+| `USAS_BIND_ADDRESS` | The host address port 8080 is published on: the one the reverse proxy reaches |
+| `USAS_PUBLIC_URL` | The HTTPS address USAS is opened at, through the proxy; passkeys belong to its host name |
+| `USAS_TRUSTED_PROXIES` | The reverse proxy's address, whose forwarded headers USAS believes |
 
 `CONFIG_ROOT` holds every secret USAS has: back it up (`scripts/backup.sh`), encrypt the copy that leaves the
 host (`BACKUP_AGE_RECIPIENT`, [installing](docs/installing.md#scheduled-backups)), and never point it into
 `/var/lib/docker/volumes`, where `docker volume prune` deletes it
 ([installing](docs/installing.md#where-data-lives)). autoheal's optional webhook URL (restart notices, for example
-to Discord) goes in `autoheal.env` (template [`autoheal.env.example`](autoheal.env.example), mode `600`,
-gitignored).
+to Discord) uses `WEBHOOK_URL` in `autoheal.env` (template [`autoheal.env.example`](autoheal.env.example), mode `600`,
+gitignored). Scheduled backup settings use [`backup.env.example`](backup.env.example); see the
+[configuration reference](docs/interfaces.md#backupenv) for optional names and meanings.
 
 Ports, volumes and labels: [docs/interfaces.md](docs/interfaces.md).
 
@@ -110,8 +140,9 @@ Ports, volumes and labels: [docs/interfaces.md](docs/interfaces.md).
   host with age, and keep the private key off this host.
 - Don't run an auto-updater such as Watchtower on these containers; upgrade from this repository instead (a
   release, or `main`).
-- The policy check refuses privileged containers, added capabilities, host networking and Docker socket
-  mounts unless a service documents why ([docs/security.md](docs/security.md)).
+- The policy check constrains added capabilities to Docker's default set and refuses privileged containers,
+  host networking and Docker socket mounts unless a service documents an explicit exception
+  ([docs/security.md](docs/security.md)).
 
 Report vulnerabilities privately: [SECURITY.md](SECURITY.md).
 

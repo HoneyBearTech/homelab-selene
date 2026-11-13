@@ -16,7 +16,7 @@ with every image pinned by digest. You can check that what you run came from tha
 - the **version tag** in git is signed with the maintainer's SSH key.
 
 You need [cosign](https://docs.sigstore.dev/cosign/system_config/installation/) 3.0 or later. The examples
-use version 0.1.0; substitute the one you run. There is no release yet: the first is **Planned**.
+use version 0.1.0; substitute the one you run.
 
 ## The release files
 
