@@ -60,7 +60,8 @@ Each release carries a CycloneDX SBOM listing every service's image and digest
   back either.
 - **USAS is the exception and is merged by hand**: its pull requests (rebuilds included) stay open for the
   maintainer, who reads the release notes, verifies the image's cosign signature by pinned digest and takes a
-  backup ([upgrading.md](upgrading.md#upgrading-usas)). The rule is in `renovate.json`.
+  backup ([upgrading.md](upgrading.md#upgrading-usas)). The rule is in `renovate.json`. It gets its own pull
+  request, so the weekly group still merges.
 - **A merge deploys.** The maintainer's server follows `main` with a pull agent, so each merge, the automatic
   ones included, reaches it within about two minutes ([upgrading.md](upgrading.md#following-main)). The nightly
   [scheduled backup](installing.md#scheduled-backups) is the way back; take a manual backup before merging USAS.

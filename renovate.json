@@ -85,11 +85,12 @@
       ]
     },
     {
-      "description": "Kept manual: USAS's cosign signature is checked by hand, by digest, before every bump (docs/upgrading.md), so Renovate proposes its updates (rebuilds included) but never merges them.",
+      "description": "Kept manual: USAS's cosign signature is checked by hand, by digest, before every bump (docs/upgrading.md), so Renovate proposes its updates (rebuilds included) but never merges them. Kept out of the update group (its own pull request), because a group merges automatically only when every update in it may.",
       "matchPackageNames": [
         "honeybeartech/ubuntu-server-auto-setup"
       ],
-      "automerge": false
+      "automerge": false,
+      "groupName": null
     }
   ]
 }
