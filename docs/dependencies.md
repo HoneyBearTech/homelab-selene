@@ -48,21 +48,30 @@ Each release carries a CycloneDX SBOM listing every service's image and digest
 - **Minor and patch updates are grouped** into one proposal. Major updates remain separate and add the `major`
   label to the global `dependencies` label. Digest updates remain enabled outside the minor/patch group;
   existing image pins are preserved. Vulnerability alerts carry `security`, and OSV alerts are enabled.
-- **Every update requires manual review and merge**, including major updates and digest-only image rebuilds.
-  Required checks still apply: CI with the Compose policy check and smoke test, CodeQL and dependency review.
-  Renovate has `automerge: false`; the retained Dependabot auto-merge workflow does not enable it for Renovate.
-- **USAS signature checks still apply**: the maintainer reads the release notes, verifies the image's cosign
-  signature by pinned digest and takes a backup ([upgrading.md](upgrading.md#upgrading-usas)).
-- **A merge deploys.** The maintainer's server follows `main` with a pull agent, so each reviewed merge reaches
-  it within about two minutes ([upgrading.md](upgrading.md#following-main)). Read release notes and take a backup
-  before merging; retain the nightly [scheduled backup](installing.md#scheduled-backups).
+- **Renovate merges updates once every required check has passed**, including major updates and digest-only
+  image rebuilds: it turns on GitHub's auto-merge for its pull requests, which are squash-merged when CI with the
+  Compose policy check and smoke test, CodeQL, dependency review and DCO have passed. Nothing skips a check, and a
+  failing update stays open for the maintainer. The retained Dependabot auto-merge workflow only acts on
+  Dependabot's pull requests, not on Renovate's.
+- **A new version waits three days after its release** (`minimumReleaseAge`), so a release that is pulled or fixed
+  within days doesn't reach the server. Fixes for vulnerability alerts and image rebuilds (a new digest under the
+  same tag) skip the wait: Docker Hub dates a rebuild by the tag's last push, so a tag rebuilt about weekly would
+  never get through the Monday-only schedule. A version from a registry that reports no release date isn't held
+  back either.
+- **USAS is the exception and is merged by hand**: its pull requests (rebuilds included) stay open for the
+  maintainer, who reads the release notes, verifies the image's cosign signature by pinned digest and takes a
+  backup ([upgrading.md](upgrading.md#upgrading-usas)). The rule is in `renovate.json`. It gets its own pull
+  request, so the weekly group still merges.
+- **A merge deploys.** The maintainer's server follows `main` with a pull agent, so each merge, the automatic
+  ones included, reaches it within about two minutes ([upgrading.md](upgrading.md#following-main)). The nightly
+  [scheduled backup](installing.md#scheduled-backups) is the way back; take a manual backup before merging USAS.
 - **Dependency review** ([`.github/workflows/dependency-review.yml`](../.github/workflows/dependency-review.yml))
   blocks a pull request that adds or changes a Python or Actions dependency with a known vulnerability of
   moderate severity or higher, or a license outside the allowlist.
 - CI-only images embedded in workflow `run:` steps still need manual checks at least quarterly; GitLab CI and
   the scripts' busybox image are now covered by Renovate.
 - **Nothing on the host updates from a registry.** Auto-updaters such as Watchtower are not used: the pull agent
-  only applies commits reviewed and merged into `main`.
+  only applies commits merged into `main`.
 
 After merge, the owner must install or enable Renovate for this repository. Repository security settings have
 not been changed by this migration. Disable *Dependabot security updates* (keep *Dependabot alerts*) in Settings → Code security.
@@ -96,7 +105,7 @@ tag, `1.2.0`, was last updated in July 2021. No maintained numbered alternative 
 `latest@sha256:…` reference and policy exception remain frozen; choosing `1.2.0` would downgrade to an old release.
 The current upstream `latest` digest differs from the repository's pin and is not adopted here. The listing
 omits index digests for old numbered tags, so exact index aliasing is not established; no running version was
-inspected. Renovate can propose digest updates for manual review. A future maintained numbered tag can be
+inspected. Renovate proposes digest updates, which merge like any other. A future maintained numbered tag can be
 considered separately.
 
 ## Licenses
