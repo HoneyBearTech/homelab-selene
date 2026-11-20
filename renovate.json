@@ -17,7 +17,15 @@
       "security"
     ]
   },
-  "automerge": false,
+  "description": [
+    "Renovate proposes every update and merges it once every required check has passed, after a 3-day wait (docs/dependencies.md). A merge deploys: the server's pull agent applies main within minutes."
+  ],
+  "automerge": true,
+  "automergeType": "pr",
+  "automergeStrategy": "squash",
+  "platformAutomerge": true,
+  "minimumReleaseAge": "3 days",
+  "minimumReleaseAgeBehaviour": "timestamp-optional",
   "enabledManagers": [
     "docker-compose",
     "pip_requirements",
@@ -48,7 +56,18 @@
       "matchDatasources": [
         "docker"
       ],
-      "pinDigests": true
+      "pinDigests": true,
+      "description": "Pin every image by digest."
+    },
+    {
+      "description": "An image rebuild (a new digest under the same tag) skips the 3-day wait: Docker Hub dates a rebuild by the tag's last push, so a tag rebuilt about weekly would restart the clock each time and never be proposed. The smoke test and the required checks still gate it.",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchUpdateTypes": [
+        "digest"
+      ],
+      "minimumReleaseAge": null
     },
     {
       "matchUpdateTypes": [
@@ -64,6 +83,13 @@
       "addLabels": [
         "major"
       ]
+    },
+    {
+      "description": "Kept manual: USAS's cosign signature is checked by hand, by digest, before every bump (docs/upgrading.md), so Renovate proposes its updates (rebuilds included) but never merges them.",
+      "matchPackageNames": [
+        "honeybeartech/ubuntu-server-auto-setup"
+      ],
+      "automerge": false
     }
   ]
 }

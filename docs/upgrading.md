@@ -72,7 +72,7 @@ test against the Proxmox cluster.
 
 A new USAS can change how it creates VMs and what its baseline does to them, so it is never merged automatically,
 not even a rebuild of the same version: Renovate opens the pull request, and the maintainer checks it and merges
-it by hand (or bumps the image in a pull request of their own).
+it by hand (or bumps the image in a pull request of their own). Renovate merges every other update itself.
 
 1. **Read USAS's release notes** for every version between the pinned one and the new one: its `CHANGELOG.md`, and
    its upgrading notes ([upgrading.md](https://github.com/HoneyBearTech/ubuntu-server-auto-setup/blob/main/docs/upgrading.md)).
@@ -104,8 +104,8 @@ The maintainer's server doesn't check out releases: it runs `main`, and a small 
 maintainer's private orchestration repository, not here) deploys every merge. A systemd user timer starts it about
 every 90 seconds; when `main` has moved, it fast-forwards the checkout, runs `docker compose config --quiet`,
 `docker compose pull` and `docker compose up -d --remove-orphans --wait`, and logs the old and the new commit. So
-**a merge to `main` reaches the server within about two minutes**, including dependency updates reviewed and
-merged by the maintainer ([dependencies.md](dependencies.md#tracking-dependencies)).
+**a merge to `main` reaches the server within about two minutes**, including dependency updates, which Renovate merges
+once every required check has passed ([dependencies.md](dependencies.md#tracking-dependencies)).
 
 - The agent only fast-forwards: it refuses a checkout with local changes or a `main` whose history was rewritten.
   If the configuration doesn't resolve or an image can't be pulled, it moves the checkout back, so the server keeps
@@ -114,9 +114,10 @@ merged by the maintainer ([dependencies.md](dependencies.md#tracking-dependencie
   they run, and wait for a deploy in progress to finish before they stop anything, so the nightly backup never
   races a merge; the agent deploys on its first run after they finish
   ([Deploy lock](installing.md#deploy-lock)).
-- **The merge is the upgrade.** All dependency updates require manual review and merge, including majors and
-  digest-only rebuilds. USAS also needs its signature checked ([Upgrading USAS](#upgrading-usas)). Before merging
-  an update, read the release notes and take a backup on the server (`scripts/backup.sh`).
+- **The merge is the upgrade.** Renovate merges dependency updates once every required check has passed (after a
+  three-day wait), majors and digest-only rebuilds included. USAS is the exception: it needs its signature checked
+  and is merged by hand ([Upgrading USAS](#upgrading-usas)); take a backup on the server (`scripts/backup.sh`)
+  before merging it.
 - **Rolling back** is a revert pull request, deployed the same way. If USAS already rewrote its data, restore that
   too ([Rolling back](#rolling-back)).
 - **Holding the server on a version**: check out that commit or release on the server (`git checkout vX.Y.Z`).
